@@ -1,109 +1,131 @@
-// Definir les bases du convertisseur de Temperature
-
-const scaleNames = {
-      c: "Celsius",
-      f: "Fahrenheit"
+const PRODUCTS = [
+	{category: "Sporting Goods", price: "$49.99", stocked: true, name: "Football"},
+  	{category: "Sporting Goods", price: "$9.99", stocked: true, name: "Baseball"},
+  	{category: "Sporting Goods", price: "$29.99", stocked: false, name: "Basketball"},
+  	{category: "Electronics", price: "$99.99", stocked: true, name: "iPod Touch"},
+  	{category: "Electronics", price: "$399.99", stocked: false, name: "iPhone 5"},
+  	{category: "Electronics", price: "$199.99", stocked: true, name: "Nexus 7"}
+] 
+function ProductRow ({product}) {
+	const name = product.stocked ? product.name : <span className="text-danger">{product.name}</span>
+	return <tr>
+		<td>
+			{name}
+			{product.price}
+		</td>
+	</tr>
 }
 
-/**
- * 
- * 
- * Formule mathematique de conversion des temperature 
- * 
- * T(°C) = (T(°F - 32) x 5/9
- * T(°F) = T(°C) x 9/5 + 32
- *  
- * 
- */
-
-function toCelsius (fahrenheit) {
-      return (fahrenheit - 32) * 5 / 9
+function ProductCategoryRow ({category}) {
+	return <tr>
+		<th colSpan="2">{category}</th>
+	</tr>
 }
 
-function toFahrenheit (celsius) {
-      return (celsius * 9 / 5) + 32
+function ProductTable ({products, inStockOnly, filterText}) {
+	const rows = []
+	let lastCategory = null
+
+	products.forEach(product => {
+		if((inStockOnly && !product.stocked) || 
+		product.name.indexOf(filterText) === -1 
+		){
+			return
+		}
+		
+		if (product.category !== lastCategory) {
+			lastCategory = product.category
+			rows.push(<ProductCategoryRow key={lastCategory} category={lastCategory}/>)
+		}
+		rows.push(<ProductRow key={product.name} product={product}/>)
+	})
+
+	return <table className="table">
+		<thead>
+			<tr>
+				<th>Nom</th>
+				<th>Prix</th>
+			</tr>
+		</thead>
+		<tbody>
+			{rows}
+		</tbody>
+	</table>
+}
+
+class SearchBar extends React.Component {
+
+	constructor (props) {
+		super(props)
+		this.handleFilterTextChange = this.handleFilterTextChange.bind(this)
+		this.handleInStockChange = this.handleInStockChange.bind(this)
+	}
+
+	handleFilterTextChange (e) {
+		this.props.onFilterTextChange(e.target.value)
+	}
+
+	handleInStockChange (e) {
+		this.props.onStockChange(e.target.checked)
+	}
+
+	render () {
+		const {filterText, inStockOnly} = this.props
+		return <div className="mb-3">
+			<div className="form-group mb-0">
+				<input type="text" value={filterText} className="form-control" placeholder="Rechercher" onChange={this.handleFilterTextChange}></input>
+			</div>
+			<div className="formcheck">
+				<input type="checkbox" checked={inStockOnly} className="form-check-input" id="stock" onChange={this.handleInStockChange}/>
+				<label htmlFor="stock" className="form-check-label">Produit en stock seulement</label>
+			</div>
+		</div>
+	}
+}
+
+class FilterableProductTable extends React.Component {
+
+	constructor (props) {
+		super(props)
+		this.state = {
+			filterText: '',
+			inStockOnly: false
+		}
+		this.handleFilterTextChange = this.handleFilterTextChange.bind(this)
+		this.handleInStockChange = this.handleInStockChange.bind(this)
+	}
+
+
+	handleFilterTextChange (filterText) {
+		this.setState({filterText})
+	}
+
+	handleInStockChange (inStockOnly) {
+		this.setState({inStockOnly})
+	}
+
+
+	render () {
+		const {products} = this.props
+		return <React.Fragment>
+			<SearchBar 
+			filterText={this.state.filterText} 
+			inStockOnly={this.state.inStockOnly}
+			onFilterTextChange={this.handleFilterTextChange}
+			onStockChange={this.handleInStockChange}
+			/>
+			<ProductTable 
+			products={products}
+			filterText={this.state.filterText}
+			inStockOnly={this.state.inStockOnly}
+			/>
+		</React.Fragment>
+
+	}
 }
 
 
-// Convertir les données en cas d'entrée invalide + arrondir le resultat
-function tryConvert (temperature, convert) {
-      const value = parseFloat(temperature)
-      if (Number.isNaN(value)) {
-            return '';
-      }
-      const output = Math.round(convert(value) * 100 / 100).toString()
-}
 
 
-// Fonction permettant de savoir si l'eau est en ebulition
-function BoilingVerdict({celsius}) {
-      if (celsius >= 100) {
-            return <div className="alert alert-success">L'eau est en ebulition</div>
-      }
-      return <div className="alert alert-info">L'eau n'est pas en ebulition</div>
-}
-
-
-// Classe d'entree des valeur par l'utilisateur : dynamisé 
-class TemperatureInput extends React.Component {
-      constructor(props) {
-            super(props) 
-            this.handleChange = this.handleChange.bind(this)
-      }
-
-      handleChange(e) {
-            this.props.onTemperatureChange(e.target.value)
-      }
-
-      render () {
-            const {temperature} = this.props
-            const name = 'scale' + this.props.scale
-            const scaleName = scaleNames[this.props.scale]
-            return <div className="form-group">
-                        <label htmlFor={name}> Temperature (en {scaleName}) </label>
-                        <input type="text" id={name} value={temperature} className="form-control" onChange={this.handleChange}/>
-                  </div>
-      }
-}
-
-
-// Le calculateur pour effectué la conversion 
-class Calculator extends React.Component {ggggg
-      constructor (props) {
-            super(props)
-            this.state = {
-                  scale: 'c',
-                  temperature: ''
-            }
-            this.handleCelsiusChange = this.handleCelsiusChange.bind(this)
-            this.handleFahrenheitChange = this.handleFahrenheitChange.bind(this)
-      }
-
-      handleCelsiusChange (temperature) {
-            this.setState({
-                  scale: 'c',
-                  temperature
-            })
-      }
-
-      handleFahrenheitChange (temperature) {
-            this.setState({
-                  scale: 'f',
-                  temperature
-            })
-      }
-
-
-      render() {
-            const {temperature, scale} = this.state
-            const celsius = scale === 'c' ? temperature : tryConvert (temperature, toCelsius)
-            const fahrenheit = scale === 'f' ? temperature : tryConvert (temperature, toFahrenheit)
-            return <div>
-                  <TemperatureInput scale="c" temperature={celsius} onTemperatureChange={this.handleCelsiusChange}/>
-                  <TemperatureInput scale="f" temperature={fahrenheit} onTemperatureChange={this.handleFahrenheitChange}/>
-                  <BoilingVerdict celsius={celsius}/>
-            </div>
-      }
-}
-
-ReactDOM.render(<Calculator/>, document.getElementById('app'))
+ReactDOM.render(<FilterableProductTable products={PRODUCTS}/>,
+	document.getElementById('app'))
